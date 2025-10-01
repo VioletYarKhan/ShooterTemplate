@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterSim extends SubsystemBase implements ShooterIO {
     private final FlywheelSim shooterSim =
-        new FlywheelSim(LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(2), 0.04, 1), DCMotor.getKrakenX60(1), 0.005);
+        new FlywheelSim(LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(2), 0.04, 1), DCMotor.getKrakenX60(2), 0.005);
 
     private double appliedVolts = 0;
     private double targetVelocityRpm = 0;
@@ -34,9 +34,6 @@ public class ShooterSim extends SubsystemBase implements ShooterIO {
         shooterSim.setInputVoltage(appliedVolts);
         shooterSim.update(0.02);
         double velocityRPM = getVelocity();
-
-        RoboRioSim.setVInVoltage(
-            BatterySim.calculateDefaultBatteryLoadedVoltage(shooterSim.getCurrentDrawAmps()));
 
         wheelAngle += Units.rotationsToDegrees(velocityRPM * 0.02 / 60.0);
         wheelAngle %= 360;
@@ -58,7 +55,7 @@ public class ShooterSim extends SubsystemBase implements ShooterIO {
         // In sim we approximate by setting voltage proportional to error
         targetVelocityRpm = rpm;
         double error = rpm - getVelocity();
-        appliedVolts = Math.max(-12, Math.min(12, error * 0.01)); // crude P control
+        appliedVolts = Math.max(-12, Math.min(12, error * 0.1)); // crude kP control
     }
 
     @Override

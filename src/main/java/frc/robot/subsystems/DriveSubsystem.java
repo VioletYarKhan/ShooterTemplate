@@ -42,6 +42,7 @@ import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.ADIS16470_IMU.IMUAxis;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -382,6 +383,7 @@ public class DriveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    SmartDashboard.putNumber("Distance to Goal (m)", getDistanceToPose(VisionConstants.kTagLayout.getTagPose(DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7).get().toPose2d()));
     SmartDashboard.putBoolean("Aligned to Goal", aligned);
     if (Vision.getResult1() != null){
       Optional<EstimatedRobotPose> visionBotPose1 = Vision.getEstimatedGlobalPoseCam1(getCurrentPose(), Vision.getResult1());
@@ -422,7 +424,6 @@ public class DriveSubsystem extends SubsystemBase {
 
       field2d.setRobotPose(getCurrentPose());
       publisher.set(getStates());
-    SmartDashboard.putNumber("Distance to Goal", getDistanceToGoal());
     SmartDashboard.putData("Field", field2d);
     SmartDashboard.putNumber("Current Speed", MovementCalculations.getVelocityMagnitude(getCurrentSpeeds()).magnitude());
     currentTimestamp = Timer.getTimestamp();
@@ -452,5 +453,9 @@ public class DriveSubsystem extends SubsystemBase {
 
   public boolean getAligned(){
     return aligned;
+  }
+
+  public double getDistanceToPose(Pose2d pose){
+    return getCurrentPose().getTranslation().getDistance(pose.getTranslation());
   }
 }

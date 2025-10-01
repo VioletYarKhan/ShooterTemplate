@@ -173,6 +173,7 @@ public final class Constants {
     public static final double ANG_VEL_TOLERANCE_RAD_PER_SEC = Math.toRadians(5.0);
 
     public static final double MAX_DIST = 5; // Meters
+    public static final double SPIN_DIST = 7;
   }
 
   public static class BlinkinConstants{

@@ -17,6 +17,7 @@ import frc.robot.subsystems.Shooter.ShooterIO;
 import frc.robot.subsystems.Shooter.ShooterSim;
 import frc.robot.subsystems.Shooter.ShooterTalonFX;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -57,10 +58,6 @@ public class RobotContainer {
     m_drive.setDefaultCommand(
         new RunCommand(
             () -> {
-              SmartDashboard.putNumber("Distance To Speaker", m_drive.getCurrentPose().getTranslation().getDistance(
-                VisionConstants.kTagLayout
-                    .getTagPose(DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7)
-                    .get().toPose2d().getTranslation()));
               double forward = -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband);
               double strafe = -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband);
               double turn = -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband);
@@ -75,11 +72,12 @@ public class RobotContainer {
     m_driverController.rightBumper().whileTrue(new AlignToGoal(m_drive, m_driverController, DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7));
     m_driverController.rightTrigger().whileTrue(
       new RunCommand(()->{
-        if (currentState == State.ReadyForShoot){
+        if (currentState == State.ReadyForShoot || currentState == State.Shooting){
           currentState = State.Shooting;
           // TODO: feed passthrough/intake to spun-up shooter
+          currentState = State.StowedPiece;
         }
-      }, m_shooter)
+      })
     );
 
     // Operator bindings
@@ -102,20 +100,37 @@ public class RobotContainer {
                 .getTagPose(DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7)
                 .get().toPose2d().getTranslation())
             < AlignmentConstants.MAX_DIST);
+            
+    Trigger SpinUpRange =
+            new Trigger(() -> m_drive.getCurrentPose().getTranslation().getDistance(
+                VisionConstants.kTagLayout
+                    .getTagPose(DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7)
+                    .get().toPose2d().getTranslation())
+                < AlignmentConstants.SPIN_DIST);
 
     // TODO: Replace with real sensor for piece detection
     Trigger hasPiece = new Trigger(() -> true);
 
     hasPiece.onFalse(new InstantCommand(()->currentState = State.NoPiece)).onTrue(new InstantCommand(()->currentState = State.StowedPiece));
 
-    Trigger SpunUp = new Trigger(() -> m_shooter.getVelocity() > 500);
+    Trigger SpunUp = new Trigger(() -> m_shooter.getVelocity() > 3000);
 
-    (inRange.and(hasPiece)).whileTrue(new RunCommand(() -> m_shooter.setVelocity(800), m_shooter)).whileFalse(new RunCommand(() -> m_shooter.setVelocity(0), m_shooter));
+    (SpinUpRange.and(hasPiece)).whileTrue(new RunCommand(() -> m_shooter.setVelocity(3500), m_shooter)).whileFalse(new RunCommand(() -> m_shooter.set(0), m_shooter));
 
 
     Trigger readyToShoot = new Trigger(aligned.and(inRange).and(SpunUp).and(hasPiece));
 
-    readyToShoot.onTrue(new InstantCommand(() -> currentState = State.ReadyForShoot));
+    readyToShoot.onChange(new InstantCommand(()->SmartDashboard.putBoolean("Ready To Shoot", readyToShoot.getAsBoolean())));
+
+    readyToShoot.whileTrue(new RepeatCommand(new InstantCommand(() -> {if (currentState == State.StowedPiece) {currentState = State.ReadyForShoot;}})));
+
+    readyToShoot.onFalse(new InstantCommand(()->{
+      if (hasPiece.getAsBoolean()){
+        currentState = State.StowedPiece;
+      } else {
+        currentState = State.NoPiece;
+      }
+    }));
   }
 
   /** Returns the autonomous command. */
