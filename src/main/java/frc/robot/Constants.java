@@ -169,10 +169,10 @@ public final class Constants {
     public static final PIDController turnPID = new PIDController(2.0, 0.0, 0.3);{turnPID.enableContinuousInput(-Math.PI, Math.PI);}
 
     // Tolerances
-    public static final double ANGLE_TOLERANCE_RAD = Math.toRadians(5.0);  // within 2 degrees
-    public static final double ANG_VEL_TOLERANCE_RAD_PER_SEC = Math.toRadians(5.0); // < 5 deg/sec
+    public static final double ANGLE_TOLERANCE_RAD = Math.toRadians(5.0);
+    public static final double ANG_VEL_TOLERANCE_RAD_PER_SEC = Math.toRadians(5.0);
 
-    public static final double MAX_DIST = 2; // Meters
+    public static final double MAX_DIST = 5; // Meters
   }
 
   public static class BlinkinConstants{

@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.AlignmentConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.Constants.VisionConstants;
@@ -56,6 +57,10 @@ public class RobotContainer {
     m_drive.setDefaultCommand(
         new RunCommand(
             () -> {
+              SmartDashboard.putNumber("Distance To Speaker", m_drive.getCurrentPose().getTranslation().getDistance(
+                VisionConstants.kTagLayout
+                    .getTagPose(DriverStation.getAlliance().get() == Alliance.Red ? 4 : 7)
+                    .get().toPose2d().getTranslation()));
               double forward = -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband);
               double strafe = -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband);
               double turn = -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband);
@@ -105,7 +110,7 @@ public class RobotContainer {
 
     Trigger SpunUp = new Trigger(() -> m_shooter.getVelocity() > 500);
 
-    (inRange.and(hasPiece)).whileTrue(new RunCommand(() -> m_shooter.setVelocity(800), m_shooter)).onFalse(new RunCommand(() -> m_shooter.set(0), m_shooter));
+    (inRange.and(hasPiece)).whileTrue(new RunCommand(() -> m_shooter.setVelocity(800), m_shooter)).whileFalse(new RunCommand(() -> m_shooter.setVelocity(0), m_shooter));
 
 
     Trigger readyToShoot = new Trigger(aligned.and(inRange).and(SpunUp).and(hasPiece));

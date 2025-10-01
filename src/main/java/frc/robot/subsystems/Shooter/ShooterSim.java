@@ -3,33 +3,48 @@ package frc.robot.subsystems.Shooter;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.BatterySim;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterSim extends SubsystemBase implements ShooterIO {
     private final FlywheelSim shooterSim =
-        new FlywheelSim(LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(1), 0.04, 1), DCMotor.getKrakenX60(1), 0.005);
+        new FlywheelSim(LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60(2), 0.04, 1), DCMotor.getKrakenX60(1), 0.005);
 
     private double appliedVolts = 0;
     private double targetVelocityRpm = 0;
+    private double wheelAngle = 0.0;
+
+    private final Mechanism2d mech2d = new Mechanism2d(0.5, 0.5); // 0.5 m square
+    private final MechanismRoot2d root = mech2d.getRoot("ShooterBase", 0.25, 0.25);
+    private final MechanismLigament2d wheelVisual = root.append(new MechanismLigament2d("Wheel", 0.2, 0));
+    
 
     public ShooterSim() {}
 
     @Override
     public void periodic() {
-        // Apply input, update sim
         shooterSim.setInputVoltage(appliedVolts);
         shooterSim.update(0.02);
+        double velocityRPM = getVelocity();
 
-        // Sim battery sag
         RoboRioSim.setVInVoltage(
             BatterySim.calculateDefaultBatteryLoadedVoltage(shooterSim.getCurrentDrawAmps()));
 
-        SmartDashboard.putNumber("Shooter Velocity (RPM)", getVelocity());
+        wheelAngle += Units.rotationsToDegrees(velocityRPM * 0.02 / 60.0);
+        wheelAngle %= 360;
+        wheelVisual.setAngle(wheelAngle);
+
+
+        SmartDashboard.putData("Shooter Mech", mech2d);
+        SmartDashboard.putNumber("Shooter Velocity (RPM)", velocityRPM);
         SmartDashboard.putNumber("Shooter Applied Volts", appliedVolts);
     }
 
